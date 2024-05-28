@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:convert' show json;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
 
 import 'auth_service.dart';
 
@@ -28,108 +26,80 @@ class _AccountPageState extends State<AccountPage> {
   GoogleSignInAccount? _currentUser;
   bool _isAuthorized = false;
   String _contactText = '';
+  StreamSubscription<GoogleSignInAccount?>? _userChangedSubscription;
+
+  @override
+  void dispose() {
+    _userChangedSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
 
-    _googleSignIn.onCurrentUserChanged
+    _userChangedSubscription = _googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
       bool isAuthorized = account != null;
       if (kIsWeb && account != null) {
         isAuthorized = await _googleSignIn.canAccessScopes(scopes);
       }
 
-      setState(() {
-        _currentUser = account;
-        _isAuthorized = isAuthorized;
-      });
+      if (mounted) {
+        setState(() {
+          _currentUser = account;
+          _isAuthorized = isAuthorized;
+        });
+      }
 
       // Update AuthService singleton
       authService.currentUser.value = account;
 
       if (isAuthorized) {
-        unawaited(_handleGetContact(account!));
+        // unawaited(_handleGetContact(account!));
       }
     });
     _googleSignIn.signInSilently();
   }
 
-  Future<void> _handleGetContact(GoogleSignInAccount user) async {
-    setState(() {
-      _contactText = 'Loading contact info...';
-    });
-    final http.Response response = await http.get(
-      Uri.parse('https://people.googleapis.com/v1/people/me/connections'
-          '?requestMask.includeField=person.names'),
-      headers: await user.authHeaders,
-    );
-    if (response.statusCode != 200) {
-      setState(() {
-        _contactText = 'People API gave a ${response.statusCode} '
-            'response. Check logs for details.';
-      });
-      print('People API ${response.statusCode} response: ${response.body}');
-      return;
-    }
-    final Map<String, dynamic> data =
-        json.decode(response.body) as Map<String, dynamic>;
-    final String? namedContact = _pickFirstNamedContact(data);
-    setState(() {
-      if (namedContact != null) {
-        _contactText = 'I see you know $namedContact!';
-      } else {
-        _contactText = 'No contacts to display.';
-      }
-    });
-  }
-
-  String? _pickFirstNamedContact(Map<String, dynamic> data) {
-    final List<dynamic>? connections = data['connections'] as List<dynamic>?;
-    final Map<String, dynamic>? contact = connections?.firstWhere(
-      (dynamic contact) => (contact as Map<Object?, dynamic>)['names'] != null,
-      orElse: () => null,
-    ) as Map<String, dynamic>?;
-    if (contact != null) {
-      final List<dynamic> names = contact['names'] as List<dynamic>;
-      final Map<String, dynamic>? name = names.firstWhere(
-        (dynamic name) =>
-            (name as Map<Object?, dynamic>)['displayName'] != null,
-        orElse: () => null,
-      ) as Map<String, dynamic>?;
-      if (name != null) {
-        return name['displayName'] as String?;
-      }
-    }
-    return null;
-  }
-
   Future<void> _handleSignIn() async {
     try {
       await _googleSignIn.signIn();
-    } catch (error) {
-      print(error);
-    }
-  }
+      // Update AuthService singleton
+      authService.currentUser.value = _googleSignIn.currentUser;
 
-  Future<void> _handleAuthorizeScopes() async {
-    final bool isAuthorized = await _googleSignIn.requestScopes(scopes);
-    setState(() {
-      _isAuthorized = isAuthorized;
-    });
-    if (isAuthorized) {
-      unawaited(_handleGetContact(_currentUser!));
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (error) {
+      print("Error signing in: $error");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error signing in: $error")),
+        );
+      }
     }
   }
 
   Future<void> _handleSignOut() async {
-    await _googleSignIn.disconnect();
-    // Update AuthService singleton
-    authService.currentUser.value = null;
-    setState(() {
-      _currentUser = null;
-      _isAuthorized = false;
-    });
+    try {
+      await _googleSignIn.disconnect();
+      // Update AuthService singleton
+      authService.currentUser.value = null;
+      if (mounted) {
+        setState(() {
+          _currentUser = null;
+          _isAuthorized = false;
+        });
+      }
+    } catch (e) {
+      print("Error signing out: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error signing out: $e")),
+        );
+      }
+    }
   }
 
   @override
