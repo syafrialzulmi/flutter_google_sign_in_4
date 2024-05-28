@@ -24,8 +24,6 @@ GoogleSignIn _googleSignIn = GoogleSignIn(
 
 class _AccountPageState extends State<AccountPage> {
   GoogleSignInAccount? _currentUser;
-  bool _isAuthorized = false;
-  String _contactText = '';
   StreamSubscription<GoogleSignInAccount?>? _userChangedSubscription;
 
   @override
@@ -48,7 +46,6 @@ class _AccountPageState extends State<AccountPage> {
       if (mounted) {
         setState(() {
           _currentUser = account;
-          _isAuthorized = isAuthorized;
         });
       }
 
@@ -89,7 +86,6 @@ class _AccountPageState extends State<AccountPage> {
       if (mounted) {
         setState(() {
           _currentUser = null;
-          _isAuthorized = false;
         });
       }
     } catch (e) {
