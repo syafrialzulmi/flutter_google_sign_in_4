@@ -115,9 +115,13 @@ class _AccountPageState extends State<AccountPage> {
                 children: [
                   Column(
                     children: [
-                      GoogleUserCircleAvatar(
-                        identity: user,
+                      CircleAvatar(
+                        backgroundImage: NetworkImage(user.photoUrl.toString()),
+                        radius: 50,
                       ),
+                      // GoogleUserCircleAvatar(
+                      //   identity: user,
+                      // ),
                       Text(user.displayName ?? ''),
                       Text(user.email),
                     ],
