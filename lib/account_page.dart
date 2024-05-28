@@ -46,7 +46,7 @@ class _AccountPageState extends State<AccountPage> {
       });
 
       // Update AuthService singleton
-      authService.currentUser = account;
+      authService.currentUser.value = account;
 
       if (isAuthorized) {
         unawaited(_handleGetContact(account!));
@@ -125,7 +125,7 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _handleSignOut() async {
     await _googleSignIn.disconnect();
     // Update AuthService singleton
-    authService.currentUser = null;
+    authService.currentUser.value = null;
     setState(() {
       _currentUser = null;
       _isAuthorized = false;
@@ -134,7 +134,8 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final GoogleSignInAccount? user = _currentUser ?? authService.currentUser;
+    final GoogleSignInAccount? user =
+        _currentUser ?? authService.currentUser.value;
 
     return Scaffold(
       appBar: AppBar(
