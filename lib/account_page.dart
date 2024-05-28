@@ -108,22 +108,27 @@ class _AccountPageState extends State<AccountPage> {
         title: const Text("Account"),
       ),
       body: user != null
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                ListTile(
-                  leading: GoogleUserCircleAvatar(
-                    identity: user,
+          ? SizedBox(
+              width: double.infinity,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      GoogleUserCircleAvatar(
+                        identity: user,
+                      ),
+                      Text(user.displayName ?? ''),
+                      Text(user.email),
+                    ],
                   ),
-                  title: Text(user.displayName ?? ''),
-                  subtitle: Text(user.email),
-                ),
-                const Text('Signed in successfully.'),
-                ElevatedButton(
-                  onPressed: _handleSignOut,
-                  child: const Text('SIGN OUT'),
-                ),
-              ],
+                  const Text('Signed in successfully.'),
+                  ElevatedButton(
+                    onPressed: _handleSignOut,
+                    child: const Text('SIGN OUT'),
+                  ),
+                ],
+              ),
             )
           : Column(
               mainAxisAlignment: MainAxisAlignment.center,
