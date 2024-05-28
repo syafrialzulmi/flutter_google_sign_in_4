@@ -1,9 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-
 import 'auth_service.dart';
 
 class AccountPage extends StatefulWidget {
@@ -49,11 +47,17 @@ class _AccountPageState extends State<AccountPage> {
         });
       }
 
-      // Update AuthService singleton
-      authService.currentUser.value = account;
-
       if (isAuthorized) {
-        // unawaited(_handleGetContact(account!));
+        final user = {
+          'email': account!.email,
+          'displayName': account.displayName,
+          'photoUrl': account.photoUrl,
+        };
+        authService.currentUser.value = user;
+        await authService.saveUser(user);
+      } else {
+        authService.currentUser.value = null;
+        await authService.saveUser(null);
       }
     });
     _googleSignIn.signInSilently();
@@ -62,8 +66,16 @@ class _AccountPageState extends State<AccountPage> {
   Future<void> _handleSignIn() async {
     try {
       await _googleSignIn.signIn();
-      // Update AuthService singleton
-      authService.currentUser.value = _googleSignIn.currentUser;
+      final account = _googleSignIn.currentUser;
+      if (account != null) {
+        final user = {
+          'email': account.email,
+          'displayName': account.displayName,
+          'photoUrl': account.photoUrl,
+        };
+        authService.currentUser.value = user;
+        await authService.saveUser(user);
+      }
 
       if (mounted) {
         setState(() {});
@@ -80,9 +92,16 @@ class _AccountPageState extends State<AccountPage> {
 
   Future<void> _handleSignOut() async {
     try {
-      await _googleSignIn.disconnect();
-      // Update AuthService singleton
+      final account = _googleSignIn.currentUser;
+      if (account != null) {
+        await _googleSignIn.disconnect();
+      } else {
+        print("No user signed in.");
+      }
+
       authService.currentUser.value = null;
+      await authService.saveUser(null);
+
       if (mounted) {
         setState(() {
           _currentUser = null;
@@ -100,8 +119,13 @@ class _AccountPageState extends State<AccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final GoogleSignInAccount? user =
-        _currentUser ?? authService.currentUser.value;
+    final Map<String, String?>? user = _currentUser != null
+        ? {
+            'email': _currentUser!.email,
+            'displayName': _currentUser!.displayName,
+            'photoUrl': _currentUser!.photoUrl,
+          }
+        : authService.currentUser.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -116,14 +140,11 @@ class _AccountPageState extends State<AccountPage> {
                   Column(
                     children: [
                       CircleAvatar(
-                        backgroundImage: NetworkImage(user.photoUrl.toString()),
+                        backgroundImage: NetworkImage(user['photoUrl'] ?? ''),
                         radius: 50,
                       ),
-                      // GoogleUserCircleAvatar(
-                      //   identity: user,
-                      // ),
-                      Text(user.displayName ?? ''),
-                      Text(user.email),
+                      Text(user['displayName'] ?? ''),
+                      Text(user['email']!),
                     ],
                   ),
                   const Text('Signed in successfully.'),

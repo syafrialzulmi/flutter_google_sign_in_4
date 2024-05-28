@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_sign_in_4/account_page.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-
 import 'auth_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -31,7 +29,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: Center(
-        child: ValueListenableBuilder<GoogleSignInAccount?>(
+        child: ValueListenableBuilder<Map<String, String?>?>(
           valueListenable: authService.currentUser,
           builder: (context, user, child) {
             return Column(
@@ -39,13 +37,13 @@ class _HomePageState extends State<HomePage> {
               children: [
                 Text(
                   user != null
-                      ? "Welcome back, ${user.displayName}"
+                      ? "Welcome back, ${user['displayName'] ?? ''}"
                       : "Welcome back",
                   style: const TextStyle(
                     fontSize: 24,
                   ),
                 ),
-                Text(user != null ? "Signed in as ${user.email}" : "new user"),
+                Text(user != null ? "Signed in as ${user['email']}" : "new user"),
               ],
             );
           },
