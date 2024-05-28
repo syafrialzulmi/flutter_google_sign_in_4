@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
+import 'auth_service.dart';
+
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
 
@@ -33,7 +35,6 @@ class _AccountPageState extends State<AccountPage> {
 
     _googleSignIn.onCurrentUserChanged
         .listen((GoogleSignInAccount? account) async {
-      print('object');
       bool isAuthorized = account != null;
       if (kIsWeb && account != null) {
         isAuthorized = await _googleSignIn.canAccessScopes(scopes);
@@ -43,6 +44,9 @@ class _AccountPageState extends State<AccountPage> {
         _currentUser = account;
         _isAuthorized = isAuthorized;
       });
+
+      // Update AuthService singleton
+      authService.currentUser = account;
 
       if (isAuthorized) {
         unawaited(_handleGetContact(account!));
@@ -118,11 +122,19 @@ class _AccountPageState extends State<AccountPage> {
     }
   }
 
-  Future<void> _handleSignOut() => _googleSignIn.disconnect();
+  Future<void> _handleSignOut() async {
+    await _googleSignIn.disconnect();
+    // Update AuthService singleton
+    authService.currentUser = null;
+    setState(() {
+      _currentUser = null;
+      _isAuthorized = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final GoogleSignInAccount? user = _currentUser;
+    final GoogleSignInAccount? user = _currentUser ?? authService.currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,47 +152,12 @@ class _AccountPageState extends State<AccountPage> {
                   subtitle: Text(user.email),
                 ),
                 const Text('Signed in successfully.'),
-                if (_isAuthorized) ...<Widget>[
-                  Text(_contactText),
-                  ElevatedButton(
-                    child: const Text('REFRESH'),
-                    onPressed: () => _handleGetContact(user),
-                  ),
-                ],
-                if (!_isAuthorized) ...<Widget>[
-                  const Text(
-                      'Additional permissions needed to read your contacts.'),
-                  ElevatedButton(
-                    onPressed: _handleAuthorizeScopes,
-                    child: const Text('REQUEST PERMISSIONS'),
-                  ),
-                ],
                 ElevatedButton(
                   onPressed: _handleSignOut,
                   child: const Text('SIGN OUT'),
                 ),
               ],
             )
-          // ? Center(
-          //     child: Column(
-          //       mainAxisAlignment: MainAxisAlignment.center,
-          //       children: [
-          //         SizedBox(
-          //           height: 100,
-          //           width: 100,
-          //           child: GoogleUserCircleAvatar(
-          //             identity: user,
-          //           ),
-          //         ),
-          //         Text(user.displayName ?? ''),
-          //         Text(user.email),
-          //         ElevatedButton(
-          //           onPressed: _handleSignOut,
-          //           child: const Text('SIGN OUT'),
-          //         ),
-          //       ],
-          //     ),
-          //   )
           : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

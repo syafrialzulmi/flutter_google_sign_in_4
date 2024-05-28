@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_sign_in_4/account_page.dart';
 
+import 'auth_service.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -11,6 +13,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
+    final user = authService.currentUser;
+    print(user);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Sign in using Google"),
@@ -27,17 +31,19 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              "Welcome back",
-              style: TextStyle(
+              user != null
+                  ? "Welcome back, ${user!.displayName}"
+                  : "Welcome back",
+              style: const TextStyle(
                 fontSize: 24,
               ),
             ),
-            Text("new user"),
+            Text(user != null ? "Signed in as ${user!.email}" : "new user"),
           ],
         ),
       ),
